@@ -9,6 +9,10 @@ let package = Package(
             name: "SaveToClipboard",
             dependencies: [],
             path: "Sources/SaveToClipboard"
+        ),
+        .testTarget(
+            name: "SaveToClipboardTests",
+            dependencies: ["SaveToClipboard"]
         )
     ]
 )

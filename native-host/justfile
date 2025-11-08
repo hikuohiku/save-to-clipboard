@@ -54,10 +54,6 @@ test:
 clean:
     rm -rf dist
 
-# Native Hostを手動テスト
-test-native:
-    ./test.sh
-
 # バイナリを /Applications にインストール（開発用）
 install: app
     cp -R dist/SaveToClipboard.app /Applications/
