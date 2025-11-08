@@ -1,0 +1,6 @@
+# Swift build artifacts
+.build
+native-host/dist/
+
+# macOS
+.DS_Store

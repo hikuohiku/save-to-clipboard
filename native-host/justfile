@@ -1,0 +1,71 @@
+# SaveToClipboard - Build automation
+
+default:
+    @just --list
+
+# Swift/Xcode バージョン表示
+version:
+    swift --version
+    xcodebuild -version 2>/dev/null || echo "Xcode not found"
+
+# デバッグビルド
+build:
+    swift build
+
+# リリースビルド
+build-release:
+    swift build -c release
+
+# .appバンドル作成
+app: clean build-release
+    #!/usr/bin/env bash
+    set -e
+    VERSION=$(cat VERSION 2>/dev/null || echo "1.0.0")
+    APP_BUNDLE="dist/SaveToClipboard.app"
+
+    mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
+
+    cp .build/release/SaveToClipboard "$APP_BUNDLE/Contents/MacOS/"
+    chmod +x "$APP_BUNDLE/Contents/MacOS/SaveToClipboard"
+    sed "s/__VERSION__/$VERSION/g" pkg/Info.plist.template > "$APP_BUNDLE/Contents/Info.plist"
+
+# DMG作成
+dmg: app
+    #!/usr/bin/env bash
+    set -e
+    VERSION=$(cat VERSION 2>/dev/null || echo "1.0.0")
+    DMG_NAME="dist/SaveToClipboard-${VERSION}.dmg"
+    DMG_TEMP="dist/dmg_temp"
+
+    mkdir -p "$DMG_TEMP"
+    cp -R dist/SaveToClipboard.app "$DMG_TEMP/"
+    ln -s /Applications "$DMG_TEMP/Applications"
+
+    hdiutil create -volname "SaveToClipboard" -srcfolder "$DMG_TEMP" -ov -format UDZO "$DMG_NAME" > /dev/null
+    rm -rf "$DMG_TEMP"
+
+    echo "✅ $DMG_NAME ($(du -h $DMG_NAME | cut -f1))"
+
+# テストを実行
+test:
+    swift test
+
+# クリーンアップ
+clean:
+    rm -rf dist
+
+# Native Hostを手動テスト
+test-native:
+    ./test.sh
+
+# バイナリを /Applications にインストール（開発用）
+install: app
+    cp -R dist/SaveToClipboard.app /Applications/
+
+# アンインストール
+uninstall:
+    rm -rf /Applications/SaveToClipboard.app
+
+# 拡張機能IDを設定
+configure EXTENSION_ID:
+    /Applications/SaveToClipboard.app/Contents/MacOS/SaveToClipboard --configure {{ EXTENSION_ID }}
