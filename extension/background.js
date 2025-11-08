@@ -7,12 +7,15 @@ const NATIVE_HOST_NAME = "com.hikuohiku.save_to_clipboard";
 chrome.action.onClicked.addListener(async (tab) => {
   try {
     // Check if the current tab is a PDF
-    const response = await chrome.tabs.sendMessage(tab.id, { action: "checkIfPdf" });
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: "checkIfPdf",
+    });
 
     if (response && response.isPdf) {
       // Get filename from URL
       const url = tab.url;
-      const filename = url.substring(url.lastIndexOf('/') + 1).split('?')[0] || 'document.pdf';
+      const filename =
+        url.substring(url.lastIndexOf("/") + 1).split("?")[0] || "document.pdf";
 
       console.log(`Copying PDF from: ${url}`);
 
@@ -23,7 +26,10 @@ chrome.action.onClicked.addListener(async (tab) => {
         console.log("PDF successfully copied to clipboard!");
         // Show a badge to indicate success
         chrome.action.setBadgeText({ text: "✓", tabId: tab.id });
-        chrome.action.setBadgeBackgroundColor({ color: "#4CAF50", tabId: tab.id });
+        chrome.action.setBadgeBackgroundColor({
+          color: "#4CAF50",
+          tabId: tab.id,
+        });
         setTimeout(() => {
           chrome.action.setBadgeText({ text: "", tabId: tab.id });
         }, 2000);
@@ -32,7 +38,10 @@ chrome.action.onClicked.addListener(async (tab) => {
       console.log("Current page is not a PDF");
       // Show a badge to indicate this is not a PDF
       chrome.action.setBadgeText({ text: "!", tabId: tab.id });
-      chrome.action.setBadgeBackgroundColor({ color: "#FF9800", tabId: tab.id });
+      chrome.action.setBadgeBackgroundColor({
+        color: "#FF9800",
+        tabId: tab.id,
+      });
       setTimeout(() => {
         chrome.action.setBadgeText({ text: "", tabId: tab.id });
       }, 2000);

@@ -1,9 +1,14 @@
-name: CI
+name: CI / Native Host
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'native-host/**'
+  pull_request:
+    paths:
+      - 'native-host/**'
 
 jobs:
   test:
