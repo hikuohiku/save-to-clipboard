@@ -61,6 +61,10 @@ jobs:
           # Allow codesign to access the keychain
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PWD" $KEYCHAIN_PATH
 
+          # Verify certificate
+          echo "Imported certificates:"
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
+
       - name: Build
         working-directory: native-host
         run: just dmg-release ${{ steps.get_version.outputs.VERSION }}
