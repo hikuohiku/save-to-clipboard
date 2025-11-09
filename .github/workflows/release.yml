@@ -33,27 +33,6 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Import signing certificate
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
-          p12-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
-
-      - name: Trust self-signed certificate
-        run: |
-          # Extract certificate hash
-          CERT_HASH=$(security find-certificate -a -Z signing_temp.keychain | grep "SHA-1" | head -1 | awk '{print $3}')
-          echo "Certificate hash: $CERT_HASH"
-
-          # Add trust settings for the certificate
-          security add-trusted-cert -d -r trustRoot -k signing_temp.keychain signing_temp.keychain
-
-          # Set the certificate as trusted for code signing
-          sudo security add-trusted-cert -d -r trustAsRoot -p codeSign -k /Library/Keychains/System.keychain <(security find-certificate -c "SaveToClipboard Self-Signed" -p signing_temp.keychain)
-
-          echo "=== After trust settings ==="
-          security find-identity -v -p codesigning signing_temp.keychain
-
       - name: Build
         working-directory: native-host
         run: just dmg-release ${{ steps.get_version.outputs.VERSION }}

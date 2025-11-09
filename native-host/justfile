@@ -29,13 +29,12 @@ app version="0.0.0": clean build-release
     chmod +x "$APP_BUNDLE/Contents/MacOS/SaveToClipboard"
     sed "s/__VERSION__/$VERSION/g" pkg/Info.plist.template > "$APP_BUNDLE/Contents/Info.plist"
 
-# 署名つき.appバンドル作成
+# 署名つき.appバンドル作成（Ad-hoc signing）
 app-release version="0.0.0": clean build-release
     #!/usr/bin/env bash
     set -e
     VERSION="{{ version }}"
     APP_BUNDLE="dist/SaveToClipboard.app"
-    CERT_NAME="SaveToClipboard Self-Signed"
 
     mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 
@@ -43,21 +42,11 @@ app-release version="0.0.0": clean build-release
     chmod +x "$APP_BUNDLE/Contents/MacOS/SaveToClipboard"
     sed "s/__VERSION__/$VERSION/g" pkg/Info.plist.template > "$APP_BUNDLE/Contents/Info.plist"
 
-    # Find first available codesigning identity from all keychains
-    IDENTITY=$(security find-identity -v -p codesigning | grep -E '^\s+[0-9]+\)' | head -1 | sed -E 's/^[^"]*"([^"]+)".*/\1/')
+    # Ad-hoc signing (same as Alacritty)
+    codesign --remove-signature "$APP_BUNDLE" 2>/dev/null || true
+    codesign --force --deep --sign - "$APP_BUNDLE"
 
-    if [ -n "$IDENTITY" ]; then
-        codesign --force --deep --sign "$IDENTITY" "$APP_BUNDLE"
-        echo "✅ Signed with certificate: $IDENTITY"
-    else
-        echo "❌ No codesigning identity found"
-        echo "Available certificates:"
-        security find-identity -v -p codesigning
-        echo ""
-        echo "Keychains:"
-        security list-keychains
-        exit 1
-    fi
+    echo "✅ Signed with ad-hoc signature"
 
 # DMG作成
 dmg version="0.0.0": (app version)
@@ -91,7 +80,7 @@ dmg-release version="0.0.0": (app-release version)
     hdiutil create -volname "SaveToClipboard" -srcfolder "$DMG_TEMP" -ov -format UDZO "$DMG_NAME" > /dev/null
     rm -rf "$DMG_TEMP"
 
-    echo "✅ $DMG_NAME ($(du -h $DMG_NAME | cut -f1)) [Self-Signed]"
+    echo "✅ $DMG_NAME ($(du -h $DMG_NAME | cut -f1)) [Signed]"
 
 # テストを実行
 test:
