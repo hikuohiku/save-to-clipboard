@@ -51,8 +51,13 @@ jobs:
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PWD" $KEYCHAIN_PATH
 
-          # Import certificate
-          security import $CERTIFICATE_PATH -P "$CERTIFICATE_PWD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          # Import certificate with private key
+          security import $CERTIFICATE_PATH \
+            -P "$CERTIFICATE_PWD" \
+            -k $KEYCHAIN_PATH \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security \
+            -A
 
           # Add keychain to search list and set as default
           security list-keychain -d user -s $KEYCHAIN_PATH $(security list-keychains -d user | sed s/\"//g)
