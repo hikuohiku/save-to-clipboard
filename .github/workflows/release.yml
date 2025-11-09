@@ -13,11 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "6.2.1"
-
       - name: Setup just
         uses: extractions/setup-just@v3
 
