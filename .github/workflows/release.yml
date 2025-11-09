@@ -39,19 +39,20 @@ jobs:
           p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
 
-      - name: Debug certificate import
+      - name: Trust self-signed certificate
         run: |
-          echo "=== Keychains ==="
-          security list-keychains
-          echo ""
-          echo "=== Default keychain ==="
-          security default-keychain
-          echo ""
-          echo "=== Identities in all keychains ==="
-          security find-identity -v -p codesigning
-          echo ""
-          echo "=== Identities in signing_temp.keychain ==="
-          security find-identity -v -p codesigning signing_temp.keychain || true
+          # Extract certificate hash
+          CERT_HASH=$(security find-certificate -a -Z signing_temp.keychain | grep "SHA-1" | head -1 | awk '{print $3}')
+          echo "Certificate hash: $CERT_HASH"
+
+          # Add trust settings for the certificate
+          security add-trusted-cert -d -r trustRoot -k signing_temp.keychain signing_temp.keychain
+
+          # Set the certificate as trusted for code signing
+          sudo security add-trusted-cert -d -r trustAsRoot -p codeSign -k /Library/Keychains/System.keychain <(security find-certificate -c "SaveToClipboard Self-Signed" -p signing_temp.keychain)
+
+          echo "=== After trust settings ==="
+          security find-identity -v -p codesigning signing_temp.keychain
 
       - name: Build
         working-directory: native-host
