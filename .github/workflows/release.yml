@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-native-host:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2.1"
+
+      - name: Setup just
+        uses: extractions/setup-just@v3
+
+      # Build once to restore cache with this action
+      - name: Restore cache
+        uses: brightdigit/swift-build@v1.4.0
+        with:
+          working-directory: native-host
+          scheme: SaveToClipboard
+          build-only: true
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build
+        working-directory: native-host
+        run: just dmg ${{ steps.get_version.outputs.VERSION }}
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: dmg-artifact
+          path: native-host/dist/SaveToClipboard-${{ steps.get_version.outputs.VERSION }}.dmg
+          retention-days: 1
+
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+
+  build-extension:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Patch extension version
+        run: |
+          cd extension
+          jq --arg version "${{ steps.get_version.outputs.VERSION }}" '.version = $version' manifest.json > manifest.json
+
+      - name: Create extension zip
+        run: |
+          cd extension
+          zip -r ../SaveToClipboard-Extension-${{ steps.get_version.outputs.VERSION }}.zip \
+            manifest.json \
+            background.js \
+            content.js \
+            icons/ \
+            -x "node_modules/*" ".prettierrc"
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: extension-artifact
+          path: SaveToClipboard-Extension-${{ steps.get_version.outputs.VERSION }}.zip
+          retention-days: 1
+
+  release:
+    needs: [build-native-host, build-extension]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download DMG artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: dmg-artifact
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: extension-artifact
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            SaveToClipboard-${{ needs.build-native-host.outputs.version }}.dmg
+            SaveToClipboard-Extension-${{ needs.build-native-host.outputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

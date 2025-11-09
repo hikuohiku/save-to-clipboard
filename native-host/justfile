@@ -17,10 +17,10 @@ build-release:
     swift build -c release
 
 # .appバンドル作成
-app: clean build-release
+app version="0.0.0": clean build-release
     #!/usr/bin/env bash
     set -e
-    VERSION=$(cat VERSION 2>/dev/null || echo "1.0.0")
+    VERSION="{{version}}"
     APP_BUNDLE="dist/SaveToClipboard.app"
 
     mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
@@ -30,10 +30,10 @@ app: clean build-release
     sed "s/__VERSION__/$VERSION/g" pkg/Info.plist.template > "$APP_BUNDLE/Contents/Info.plist"
 
 # DMG作成
-dmg: app
+dmg version="0.0.0": (app version)
     #!/usr/bin/env bash
     set -e
-    VERSION=$(cat VERSION 2>/dev/null || echo "1.0.0")
+    VERSION="{{version}}"
     DMG_NAME="dist/SaveToClipboard-${VERSION}.dmg"
     DMG_TEMP="dist/dmg_temp"
 
@@ -55,7 +55,7 @@ clean:
     rm -rf dist
 
 # バイナリを /Applications にインストール（開発用）
-install: app
+install version="0.0.0": (app version)
     cp -R dist/SaveToClipboard.app /Applications/
 
 # アンインストール
