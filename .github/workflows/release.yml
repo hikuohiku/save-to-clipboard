@@ -39,6 +39,20 @@ jobs:
           p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
 
+      - name: Debug certificate import
+        run: |
+          echo "=== Keychains ==="
+          security list-keychains
+          echo ""
+          echo "=== Default keychain ==="
+          security default-keychain
+          echo ""
+          echo "=== Identities in all keychains ==="
+          security find-identity -v -p codesigning
+          echo ""
+          echo "=== Identities in signing_temp.keychain ==="
+          security find-identity -v -p codesigning signing_temp.keychain || true
+
       - name: Build
         working-directory: native-host
         run: just dmg-release ${{ steps.get_version.outputs.VERSION }}

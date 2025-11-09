@@ -43,13 +43,19 @@ app-release version="0.0.0": clean build-release
     chmod +x "$APP_BUNDLE/Contents/MacOS/SaveToClipboard"
     sed "s/__VERSION__/$VERSION/g" pkg/Info.plist.template > "$APP_BUNDLE/Contents/Info.plist"
 
-    if security find-identity -v -p codesigning | grep -q "$CERT_NAME"; then
-        codesign --force --deep --sign "$CERT_NAME" "$APP_BUNDLE"
-        echo "✅ Signed with self-signed certificate: $CERT_NAME"
+    # Find first available codesigning identity from all keychains
+    IDENTITY=$(security find-identity -v -p codesigning | grep -E '^\s+[0-9]+\)' | head -1 | sed -E 's/^[^"]*"([^"]+)".*/\1/')
+
+    if [ -n "$IDENTITY" ]; then
+        codesign --force --deep --sign "$IDENTITY" "$APP_BUNDLE"
+        echo "✅ Signed with certificate: $IDENTITY"
     else
-        echo "❌ Certificate '$CERT_NAME' not found"
+        echo "❌ No codesigning identity found"
         echo "Available certificates:"
         security find-identity -v -p codesigning
+        echo ""
+        echo "Keychains:"
+        security list-keychains
         exit 1
     fi
 
