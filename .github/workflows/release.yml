@@ -63,7 +63,8 @@ jobs:
       - name: Patch extension version
         run: |
           cd extension
-          jq --arg version "${{ steps.get_version.outputs.VERSION }}" '.version = $version' manifest.json > manifest.json
+          jq --arg version "${{ steps.get_version.outputs.VERSION }}" '.version = $version' manifest.json > manifest.tmp.json
+          mv manifest.tmp.json manifest.json
 
       - name: Create extension zip
         run: |
